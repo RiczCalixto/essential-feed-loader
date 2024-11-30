@@ -9,31 +9,37 @@ import Foundation
 import XCTest
 
 class HTTPClient {
-  static let standard = HTTPClient()
+  static var standard = HTTPClient()
+
+  func get(from _: URL) {}
+}
+
+class HTTPClientSpy: HTTPClient {
   var requestedURL: URL?
-  private init() {}
+  override func get(from url: URL) {
+    requestedURL = url
+  }
 }
 
 struct RemoteFeedLoader {
   func load() {
-    HTTPClient.standard.requestedURL = URL(string: "https://a-url.com")
+    HTTPClient.standard.get(from: URL(string: "https://a-url.com")!)
   }
 }
 
 class RemoteFeedLoadersTests: XCTestCase {
-  override class func tearDown() {
-    HTTPClient.standard.requestedURL = nil
-  }
-
   func test_doesNotRequestDataFromURL() {
-    let client = HTTPClient.standard
+    let client = HTTPClientSpy()
+    HTTPClient.standard = client
     let _ = RemoteFeedLoader()
 
     XCTAssertNil(client.requestedURL)
   }
 
   func test_load_requestDataFromURL() {
-    let client = HTTPClient.standard
+    let client = HTTPClientSpy()
+    HTTPClient.standard = client
+
     let sut = RemoteFeedLoader()
     sut.load()
 
