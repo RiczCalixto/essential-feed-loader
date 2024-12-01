@@ -53,12 +53,16 @@ class RemoteFeedLoadersTests: XCTestCase {
     let url = URL(string: "https://a-url.com")!
     let (sut, client) = makeSUT(url: url)
 
-    var capturedErrors = [RemoteFeedLoader.Error]()
-    sut.load { capturedErrors.append($0) }
+    let samples = [199, 201, 400, 500]
 
-    client.complete(withStatusCode: 201)
+    for (index, code) in samples.enumerated() {
+      var capturedErrors = [RemoteFeedLoader.Error]()
+      sut.load { capturedErrors.append($0) }
 
-    XCTAssertEqual(capturedErrors, [.invalidData])
+      client.complete(withStatusCode: code, at: index)
+      XCTAssertEqual(capturedErrors, [.invalidData])
+    }
+
   }
 
   // MARK: Helpers
@@ -80,11 +84,11 @@ class RemoteFeedLoadersTests: XCTestCase {
       messages.append((url: url, completion: completion))
     }
 
-    func complete(with error: Error, index: Int = 0) {
+    func complete(with error: Error, at index: Int = 0) {
       messages[index].completion(.failure(error))
     }
 
-    func complete(withStatusCode code: Int, index: Int = 0) {
+    func complete(withStatusCode code: Int, at index: Int = 0) {
       let response = HTTPURLResponse(
         url: requestedURLs[index],
         statusCode: code,
