@@ -37,6 +37,8 @@ public final class RemoteFeedLoader {
       case let .success(_, httpResponse):
         if httpResponse.statusCode != 200 {
           completion(.invalidData)
+        } else {
+          completion(.invalidData)
         }
 
       case .failure:
