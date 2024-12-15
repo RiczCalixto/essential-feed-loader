@@ -9,7 +9,6 @@ import EssentialFeed
 import Foundation
 import XCTest
 
-
 class URLSessionHTTPClientTests: XCTestCase {
   override func setUp() {
     super.setUp()
@@ -191,8 +190,7 @@ class URLSessionHTTPClientTests: XCTestCase {
       requestObserver = nil
     }
 
-    override class func canInit(with request: URLRequest) -> Bool {
-      requestObserver?(request)
+    override class func canInit(with _: URLRequest) -> Bool {
       return true
     }
 
@@ -201,6 +199,11 @@ class URLSessionHTTPClientTests: XCTestCase {
     }
 
     override func startLoading() {
+      if let requestObserver = URLProtocolStub.requestObserver {
+        client?.urlProtocolDidFinishLoading(self)
+        return requestObserver(request)
+      }
+
       if let data = URLProtocolStub.stub?.data {
         client?.urlProtocol(self, didLoad: data)
       }
