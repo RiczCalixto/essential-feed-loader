@@ -10,11 +10,23 @@ import Foundation
 import XCTest
 
 class LocalFeedLoader {
-  init(store _: FeedStoreSpy) {}
+  private let store: FeedStoreSpy
+
+  init(store: FeedStoreSpy) {
+    self.store = store
+  }
+
+  func save(items _: [FeedItem]) {
+    store.deleteCachedFeed()
+  }
 }
 
 class FeedStoreSpy {
   var deleteCachedFeedCallCount = 0
+
+  func deleteCachedFeed() {
+    deleteCachedFeedCallCount += 1
+  }
 }
 
 class CacheFeedResultUseCaseTests: XCTestCase {
@@ -23,5 +35,29 @@ class CacheFeedResultUseCaseTests: XCTestCase {
     let _ = LocalFeedLoader(store: store)
 
     XCTAssertEqual(store.deleteCachedFeedCallCount, 0)
+  }
+
+  func test_requestCacheDeletion() {
+    let store = FeedStoreSpy()
+    let sut = LocalFeedLoader(store: store)
+
+    sut.save(items: [uniqueItem(), uniqueItem()])
+
+    XCTAssertEqual(store.deleteCachedFeedCallCount, 1)
+  }
+
+  // MARK: Helpers
+
+  private func uniqueItem() -> FeedItem {
+    return FeedItem(
+      id: UUID(),
+      description: "Description",
+      location: nil,
+      imageURL: anyURL()
+    )
+  }
+
+  private func anyURL() -> URL {
+    return URL(string: "https://any-url.com")!
   }
 }
