@@ -9,43 +9,6 @@ import EssentialFeed
 import Foundation
 import XCTest
 
-protocol FeedStore {
-  typealias InsertionCompletion = (Error?) -> Void
-  typealias DeletionCompletion = (Error?) -> Void
-
-  func insert(_ items: [FeedItem], timestamp: Date, completion: @escaping InsertionCompletion)
-  func deleteCachedFeed(completion: @escaping DeletionCompletion)
-}
-
-class LocalFeedLoader {
-  private let store: FeedStore
-  private let currentDate: () -> Date
-
-  init(store: FeedStore, currentDate: @escaping () -> Date) {
-    self.store = store
-    self.currentDate = currentDate
-  }
-
-  func save(_ items: [FeedItem], completion: @escaping (Error?) -> Void) {
-    store.deleteCachedFeed { [weak self] error in
-      guard let self else { return }
-
-      if let cacheDeletionError = error {
-        completion(cacheDeletionError)
-      } else {
-        cache(items, completion: completion)
-      }
-    }
-  }
-
-  private func cache(_ items: [FeedItem], completion: @escaping (Error?) -> Void) {
-    store.insert(items, timestamp: currentDate()) { [weak self] error in
-      guard self != nil else { return }
-      completion(error)
-    }
-  }
-}
-
 class CacheFeedResultUseCaseTests: XCTestCase {
   func test_doesNotMessageStoreUponCreation() {
     let (_, store) = makeSUT()
@@ -115,7 +78,7 @@ class CacheFeedResultUseCaseTests: XCTestCase {
   func test_save_doesNotDeliverDeletionErrorIfSUTDeallocated() {
     let store = FeedStoreSpy()
     var sut: LocalFeedLoader? = LocalFeedLoader(store: store, currentDate: Date.init)
-    var receivedResults = [Error?]()
+    var receivedResults = [LocalFeedLoader.SaveResult]()
 
     sut?.save([uniqueItem()]) { receivedResults.append($0) }
 
@@ -128,7 +91,7 @@ class CacheFeedResultUseCaseTests: XCTestCase {
   func test_save_doesNotDeliverInsertionErrorIfSUTDeallocated() {
     let store = FeedStoreSpy()
     var sut: LocalFeedLoader? = LocalFeedLoader(store: store, currentDate: Date.init)
-    var receivedResults = [Error?]()
+    var receivedResults = [LocalFeedLoader.SaveResult]()
 
     sut?.save([uniqueItem()]) { receivedResults.append($0) }
     store.completeDeletionSuccessfully()
